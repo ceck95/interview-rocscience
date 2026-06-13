@@ -1,0 +1,65 @@
+{
+  "name": "job-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/job-service/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{workspaceRoot}/dist/apps/job-service"],
+      "defaultConfiguration": "production",
+      "options": {
+        "target": "node",
+        "compiler": "swc",
+        "main": "apps/job-service/src/main.ts",
+        "tsConfig": "apps/job-service/tsconfig.app.json",
+        "webpackConfig": "apps/job-service/webpack.config.js",
+        "outputPath": "dist/apps/job-service",
+        "outputFileName": "main.js",
+        "outputHashing": "none",
+        "generatePackageJson": true
+      },
+      "configurations": {
+        "development": {
+          "mode": "development",
+          "sourceMap": true
+        },
+        "production": {
+          "mode": "production",
+          "optimization": true,
+          "sourceMap": false
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "job-service:build",
+        "watch": true
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "job-service:build:development"
+        },
+        "production": {
+          "buildTarget": "job-service:build:production",
+          "watch": false
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/job-service/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "passWithNoTests": true
+      }
+    }
+  }
+}

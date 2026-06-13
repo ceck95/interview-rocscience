@@ -1,0 +1,81 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# NestJS / TypeScript
+*.js.map
+*.d.ts
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Nx
+.nx/
+backend/.nx/
+tmp/
+
+# CDK
+backend/infra/cdk.out/
+backend/infra/*.js
+backend/infra/*.d.ts
+!backend/infra/jest.config.js
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V00
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing
+/test/test-results/
+/test/playwright-report/
+/test/blob-report/
+/test/playwright/.cache/
+coverage/
+.nyc_output/
+
+# LocalStack
+backend/docker/localstack-data/
+
+# AWS CDK
+*.asset.*.tar.gz
+
+# Vite
+frontend/dist/
+frontend/.vite/

@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "sharedGlobals": []
+  },
+  "plugins": [
+    {
+      "plugin": "@nx/jest/plugin",
+      "options": { "targetName": "test" }
+    }
+  ],
+  "generators": {
+    "@nx/nest:application": {
+      "linter": "eslint",
+      "unitTestRunner": "jest"
+    }
+  }
+}

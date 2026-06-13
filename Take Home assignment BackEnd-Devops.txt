@@ -1,0 +1,179 @@
+
+====================================================
+Assignment: Simplified Cloud Job Execution System
+====================================================
+
+Context
+-------
+We are building a platform that allows users to run engineering jobs in the cloud. The system involves:
+- job submission
+- cloud execution
+- storage for input/output files
+- job status tracking
+- usage-based billing / credit calculation
+
+For this assignment, we would like you to implement a simplified version of this workflow using AWS, including a small real EC2 execution step.
+
+Objective
+---------
+Build a small system that supports the following workflow:
+
+1. A user submits a cloud job
+2. The system stores job metadata
+3. The system triggers a simple execution step on AWS EC2
+4. The job transitions through lifecycle states
+5. The system stores references to input/output files
+6. When the job completes, the system calculates a mock credit cost
+7. The system exposes job status and billing summary
+
+====================================================
+Required Scope
+====================================================
+
+1. Backend/API
+--------------
+Implement a backend service with APIs for:
+
+- Create Job
+- Get Job Status
+- Complete Job (or automatically complete after execution)
+- Get Billing Summary
+
+Each job should include at minimum:
+- jobId
+- jobName
+- projectId
+- computeType (cpu-small, cpu-large, gpu)
+- inputFileName
+- status (queued, running, completed, failed)
+- outputFileName or outputFileReference
+- executionDuration
+- creditCost
+
+You may use any backend language/framework you prefer.
+
+2. Real AWS EC2 Execution Step
+------------------------------
+The solution must include one small real EC2-based execution step.
+
+This does NOT need to be a full orchestration system.
+A simple approach is acceptable, for example:
+- trigger a script or command on an EC2 instance
+- simulate job execution on that instance
+- generate an output file or output metadata
+- return / persist the result
+
+We are intentionally keeping this narrow.
+We are evaluating cloud integration and design judgment, not production-scale infrastructure.
+
+3. Storage
+----------
+Use a clear storage model for:
+- input file reference
+- output file reference
+
+You may use:
+- S3
+- or another clearly documented storage mechanism
+
+If you use S3, please document the bucket/object structure simply.
+
+4. Billing / Credit Calculation
+-------------------------------
+When a job completes, calculate a mock credit cost using a simple formula, for example:
+
+- cpu-small = 1 credit / minute
+- cpu-large = 3 credits / minute
+- gpu = 8 credits / minute
+
+The billing step should be implemented separately from initial job creation.
+If you want, you may simulate an event-driven pattern for completion + billing.
+
+5. Minimal Frontend
+-------------------
+Please include a very small UI to demonstrate the flow.
+
+It only needs to include:
+
+A. Job submission form
+- job name
+- project ID
+- compute type
+- input file name
+
+B. Job list
+- job ID
+- job name
+- status
+- compute type
+
+C. Job detail / billing view
+- status
+- duration
+- credit cost
+- input/output file references
+
+The frontend does not need to be polished.
+A simple React app or plain HTML/JS is completely fine.
+
+====================================================
+Non-Goals
+====================================================
+
+You do NOT need to build:
+- a production-grade compute orchestrator
+- auto-scaling groups
+- complex networking
+- full authentication / authorization
+- full infrastructure-as-code
+- advanced observability
+- a real external billing/credit system
+
+A focused, well-structured solution is preferred over a large one.
+
+====================================================
+Deliverables
+====================================================
+
+Please submit the following:
+
+1. Source code
+2. README including:
+   - architecture overview
+   - AWS services used
+   - setup / run instructions
+   - assumptions and trade-offs
+   - limitations
+   - what you would change for production
+3. API documentation
+4. A short design note answering:
+   - How would you evolve this into a production-ready AWS platform?
+   - How would you prevent duplicate billing if job completion is triggered twice?
+
+Optional:
+- a short screen recording or walkthrough is welcome, but not required
+
+====================================================
+Evaluation Criteria
+====================================================
+
+We will evaluate the assignment based on:
+
+1. Functional correctness
+- Does the workflow actually work end-to-end?
+
+2. Cloud/platform thinking
+- Are AWS services used sensibly?
+- Is the solution well structured?
+- Is execution separated from billing?
+
+3. Reliability thinking
+- Does the implementation consider duplicate completion or duplicate billing?
+- Is failure handling reasonable?
+
+4. Code quality
+- Is the code clean, readable, and maintainable?
+
+5. Communication
+- Is the README clear and useful?
+- Can we understand your decisions easily?

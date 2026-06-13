@@ -1,0 +1,16 @@
+{
+  "name": "interview-e2e-tests",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Playwright end-to-end tests for the Cloud Job Execution System.",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "typescript": "^5.0.0"
+  }
+}

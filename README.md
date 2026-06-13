@@ -19,6 +19,7 @@ A simplified cloud job execution platform built with **NestJS 11** in an **Nx mo
 9. [Assumptions and Trade-offs](#assumptions-and-trade-offs)
 10. [Limitations](#limitations)
 11. [Design Notes](#design-notes)
+12. [E2E Tests (Additional)](#e2e-tests-additional)
 
 ---
 
@@ -104,62 +105,55 @@ backend/
 
 ## How to Start the Project
 
-### Prerequisites
+---
+
+### Local Development
+
+Run the full stack locally using LocalStack (no real AWS account needed).
+
+#### Prerequisites
 
 - Node.js 22+
 - pnpm 10+
 - Docker (for LocalStack)
 - AWS CLI (for LocalStack commands)
 
-### Option 1 — Local Development with LocalStack (recommended)
+#### Backend
 
 ```bash
-# 1. Install dependencies
+# Install dependencies
 cd backend
 pnpm install
 
-# 2. Copy environment file
+# Copy environment file — LOCAL=true is already set, no changes needed
 cp .env.example .env
-# LOCAL=true is already set in .env.example — no changes needed for local dev
 
-# 3. Start LocalStack
+# Start LocalStack
 pnpm run localstack:up
 
-# 4. Create DynamoDB table and S3 bucket in LocalStack
+# Create DynamoDB table and S3 bucket inside LocalStack
 pnpm run localstack:deploy
 
-# 5. Start job-service in watch mode
+# Start job-service in watch mode
 SERVICE=job-service pnpm run start:dev
 ```
 
-The API is available at `http://localhost:3000/api`  
-Swagger UI is available at `http://localhost:3000/api/docs`
+- API: `http://localhost:3000/api`
+- Swagger UI: `http://localhost:3000/api/docs`
 
-### Option 2 — Production (Real AWS)
+#### Frontend
 
 ```bash
-# 1. Set AWS credentials
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export AWS_REGION=us-east-1
-
-# 2. Deploy CDK stack (creates DynamoDB, S3, IAM role)
-pnpm run cdk:deploy
-
-# 3. Update .env with real values
-LOCAL=false
-DYNAMODB_TABLE_NAME=jobs
-S3_BUCKET_NAME=job-execution-files-<account>-<region>
-EC2_INSTANCE_ID=i-xxxxxxxxx
-
-# 4. Build and start
-SERVICE=job-service pnpm run build:service
-SERVICE=job-service pnpm run start:service
+cd frontend
+npm install
+npm run dev
 ```
 
-### Running the EC2 Script Locally
+- UI: `http://localhost:5173` (connects to the backend at `http://localhost:3000/api`)
 
-The `job-runner.sh` script normally runs on EC2 via SSM. To test it locally:
+#### Test the EC2 Script Locally
+
+`job-runner.sh` normally runs on EC2 via SSM. To simulate it locally against LocalStack:
 
 ```bash
 export JOB_ID="test-job-123"
@@ -171,8 +165,66 @@ export AWS_ENDPOINT_URL="http://localhost:4566"
 export AWS_ACCESS_KEY_ID="test"
 export AWS_SECRET_ACCESS_KEY="test"
 
-bash scripts/job-runner.sh
+bash backend/scripts/job-runner.sh
 ```
+
+---
+
+### Deploy to AWS
+
+The CDK stack provisions **infrastructure only** (DynamoDB table, S3 bucket, EC2 IAM role) — it does not deploy the `job-service` app or the frontend. After provisioning, you still build/start the backend and host the frontend separately, as described below.
+
+#### Prerequisites
+
+- AWS account with IAM credentials (`AdministratorAccess` or a scoped deploy role)
+- An EC2 instance with the **SSM Agent running** and the CDK-provisioned IAM instance profile attached
+- AWS CLI configured
+
+#### Deploy Infrastructure (CDK)
+
+```bash
+cd backend
+
+# Authenticate with AWS
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_REGION=us-east-1
+
+# Provision DynamoDB table, S3 bucket, and EC2 IAM role (infrastructure only)
+pnpm run cdk:deploy
+```
+
+Note the CDK outputs — they include the DynamoDB table name, S3 bucket name, and IAM role ARN. Attach the IAM role to your EC2 instance before submitting any jobs.
+
+#### Configure Environment
+
+Update `backend/.env` with the real AWS resource values:
+
+```env
+LOCAL=false
+DYNAMODB_TABLE_NAME=jobs
+S3_BUCKET_NAME=job-execution-files-<account>-<region>
+EC2_INSTANCE_ID=i-xxxxxxxxx
+API_URL=https://<your-domain-or-ec2-public-ip>
+```
+
+#### Build and Start
+
+```bash
+SERVICE=job-service pnpm run build:service
+SERVICE=job-service pnpm run start:service
+```
+
+#### Frontend
+
+```bash
+cd frontend
+VITE_API_URL=https://<your-backend-url>/api npm run build
+```
+
+Serve the `dist/` output via any static host (S3 + CloudFront, Nginx, etc.).
+
+---
 
 ### Available pnpm Scripts
 
@@ -317,6 +369,7 @@ Presigned PUT URLs expire after **60 minutes**. Output file keys are stored in t
 
 1. **No authentication** — all endpoints are open. Production would secure them via AWS API Gateway: issue API keys per client for machine-to-machine access, or use Cognito User Pools with JWT for user-facing auth. The Gateway handles token verification before the request ever reaches the service.
 2. **LocalStack for local dev** — avoids any real AWS cost or credential complexity during development and review.
+3. **CDK provisions infrastructure only, not full end-to-end deployment** — the stack creates the minimal resources needed to run the app (DynamoDB table, S3 bucket, EC2 IAM role). It does not build/deploy the `job-service` app to EC2, set up a load balancer, or host the frontend. Deploying the app and frontend remains a manual step (see [Deploy to AWS](#deploy-to-aws)). A production setup would extend the stack with CodeDeploy/ECS for the app and CloudFront + S3 for the frontend.
 
 ---
 
@@ -484,3 +537,53 @@ Presigned PUT URLs expire after **60 minutes**. Output file keys are stored in t
 The current implementation already solves this with a **DynamoDB conditional write** (`ConditionExpression: #status = :running`). The transition from `running → completed` is atomic and can only succeed once. Any subsequent call to `/complete` receives a `ConditionalCheckFailedException` which is caught and returns the existing completed record — no billing recalculated, no data mutated.
 
 In a production system with an event-driven pattern (EventBridge + billing Lambda), the same guarantee would be enforced at the Lambda level using an idempotency key (e.g., `jobId`) stored in a separate DynamoDB idempotency table, following the **AWS Lambda Powertools idempotency** pattern.
+
+---
+
+## E2E Tests (Additional)
+
+Playwright end-to-end tests live in `test/` and cover the full job execution workflow — API layer and browser UI.
+
+### Prerequisites
+
+- Backend running at `http://localhost:3000` (LocalStack setup complete)
+- Frontend running at `http://localhost:5173`
+- Node.js 18+
+
+### Setup
+
+```bash
+cd test
+npm install
+npx playwright install chromium
+```
+
+### Running Tests
+
+```bash
+# Run all tests (Playwright auto-starts backend + frontend via webServer config)
+npm test
+
+# API-only tests — no browser required
+npm run test:api
+
+# Full end-to-end workflow tests
+npm run test:flows
+
+# Run with browser visible
+npm run test:headed
+
+# Interactive Playwright UI mode
+npm run test:ui
+
+# View HTML report after a run
+npm run test:report
+```
+
+### Test Coverage
+
+| Suite | Location | What it covers |
+|---|---|---|
+| API tests | `e2e/api/` | HTTP requests via Playwright request context — all endpoints, status codes, and error cases |
+| UI tests | `e2e/ui/` | Browser tests for job list, submission form, and detail/billing view |
+| Flow tests | `e2e/flows/` | Full workflow: submit → poll status → complete (via `/complete` callback) → verify billing → idempotency check |
